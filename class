@@ -1,0 +1,845 @@
+# Updated Animation Starter Code
+
+from tkinter import *
+import copy
+
+
+
+####################################
+# init
+####################################
+
+
+def init(data):
+    data.originalBoard = [ 
+    ["B-Rook", "B-Knight", "B-Bishop", "B-Queen", "B-King", "B-Bishop", "B-Knight", "B-Rook"],
+    ["B-Pawn", "B-Pawn", "B-Pawn", "B-Pawn", "B-Pawn", "B-Pawn", "B-Pawn", "B-Pawn"],
+    [None, None, None, None, None, None, None, None], 
+    [None, None, None, None, None, None, None, None], 
+    [None, None, None, None, None, None, None, None], 
+    [None, None, None, None, None, None, None, None], 
+    ["W-Pawn", "W-Pawn", "W-Pawn", "W-Pawn", "W-Pawn", "W-Pawn", "W-Pawn", "W-Pawn"],
+    ["W-Rook", "W-Knight", "W-Bishop", "W-Queen", "W-King", "W-Bishop", "W-Knight", "W-Rook"] 
+    ]
+    
+    data.tryBoard = [ 
+    [Rook("B-Rook", 0, 0, data.originalBoard, data), "B-Knight", Bishop("B-Bishop", 0, 2, data.originalBoard, data), Queen("B-Queen", 0, 3, data.originalBoard, data), King("B-King", 0, 4, data.originalBoard, data), Bishop("B-Bishop", 0, 5, data.originalBoard, data), "B-Knight", Rook("B-Rook", 0, 7, data.originalBoard, data)],
+    [Pawn("B-Pawn", 1, 0, data.originalBoard, data), Pawn("B-Pawn", 1, 1, data.originalBoard, data), Pawn("B-Pawn", 1, 2, data.originalBoard, data), Pawn("B-Pawn", 1, 3, data.originalBoard, data), Pawn("B-Pawn", 1, 4, data.originalBoard, data), Pawn("B-Pawn", 1, 5, data.originalBoard, data), Pawn("B-Pawn", 1, 6, data.originalBoard, data), Pawn("B-Pawn", 1, 7, data.originalBoard, data)],
+    [None, None, None, None, None, None, None, None], 
+    [None, None, None, None, None, None, None, None], 
+    [None, None, None, None, None, None, None, None], 
+    [None, None, None, None, None, None, None, None], 
+    [Pawn("W-Pawn", 6, 0, data.originalBoard, data), Pawn("W-Pawn", 6, 1, data.originalBoard, data), Pawn("W-Pawn", 6, 2, data.originalBoard, data), Pawn("W-Pawn", 6, 3, data.originalBoard, data), Pawn("W-Pawn", 6, 4, data.originalBoard, data), Pawn("W-Pawn", 6, 5, data.originalBoard, data), Pawn("W-Pawn", 6, 6, data.originalBoard, data), Pawn("W-Pawn", 6, 7, data.originalBoard, data)],
+    [Rook("W-Rook", 7, 0, data.originalBoard, data), "W-Knight", Bishop("W-Bishop", 7, 2, data.originalBoard, data), Queen("W-Queen", 7, 3, data.originalBoard, data), King("W-King", 7, 4, data.originalBoard, data), Bishop("W-Bishop", 7, 5, data.originalBoard, data), "W-Knight", Rook("W-Rook", 7, 7, data.originalBoard, data)]
+    ]
+    
+    data.margin = data.width/10
+
+    data.board = copy.deepcopy(data.originalBoard)
+    #label all data values.
+    #create a new board that will be changed for final animation
+    data.newBoard= copy.deepcopy(data.board)
+    cellWidth = (data.width-(data.margin*2))//len(data.board[0])
+    cellHeight = (data.height-(data.margin*2))//len(data.board)
+    data.cellSize = min(cellWidth, cellHeight)
+    data.selection = 0
+    data.selectedRow = 0
+    data.selectedCol = 0
+    data.insertNum = 0
+    data.range = [str(i) for i in range(1, len(data.board)+1)]
+    data.finishGame = 0
+    data.mode = "gameState"
+    data.isPaused = False
+    data.background = PhotoImage(file="rsz_scoreback.gif")
+    data.helpBackground = PhotoImage(file="helpBackground.gif")
+    data.allSelected = []
+    data.moveColor = 0
+    
+    #position scores adapted and adjusted from several sources including
+    #https://en.wikipedia.org/wiki/Chess_piece_relative_value
+    #https://www.chessprogramming.org/Evaluation
+    #https://github.com/mnahinkhan/Chess/blob/master/Chess/chess.py
+    #https://medium.freecodecamp.org/simple-chess-ai-step-by-step-1d55a9266977
+    
+    data.blackPawnScores =[
+        [0, 0, 0, 0, 0, 0, 0, 0], 
+        [50, 100, 100, -200, -200, 100, 100, 50], 
+        [50, -50, -100, 0, 0, -100, -50, 50], 
+        [0, 0, 0, 200, 200, 0, 0, 0], 
+        [50, 50, 100, 250, 250, 100, 50, 50], 
+        [100, 100, 200, 300, 300, 200, 100, 100], 
+        [500, 500, 500, 500, 500, 500, 500, 500], 
+        [0, 0, 0, 0, 0, 0, 0, 0]
+        ]
+    data.whitePawnScores = [
+        [0, 0, 0, 0, 0, 0, 0, 0], 
+        [500, 500, 500, 500, 500, 500, 500, 500], 
+        [100, 100, 200, 300, 300, 200, 100, 100], 
+        [50, 50, 100, 250, 250, 100, 50, 50], 
+        [0, 0, 0, 200, 200, 0, 0, 0], 
+        [50, -50, -100, 0, 0, -100, -50, 50], 
+        [50, 100, 100, -200, -200, 100, 100, 50], 
+        [0, 0, 0, 0, 0, 0, 0, 0]
+        ]
+    
+    data.blackKnightScores = [
+        [-500, -900, -300, -300, -300, -300, -900, -500], 
+        [-400, -200, 0, 50, 50, 0, -200, -400], 
+        [-300, 50, 100, 150, 150, 100, 50, -300], 
+        [-300, 0, 150, 200, 200, 150, 0, -300], 
+        [-300, 50, 150, 200, 200, 150, 50, -300], 
+        [-300, 0, 100, 150, 150, 100, 0, -300], 
+        [-400, -200, 0, 0, 0, 0, -200, -400], 
+        [-500, -400, -300, -300, -300, -300, -400, -500]
+        ]
+    data.whiteKnightScores = [
+        [-500, -400, -300, -300, -300, -300, -400, -500], 
+        [-400, -200, 0, 0, 0, 0, -200, -400], 
+        [-300, 0, 100, 150, 150, 100, 0, -300], 
+        [-300, 50, 150, 200, 200, 150, 50, -300], 
+        [-300, 0, 150, 200, 200, 150, 0, -300], 
+        [-300, 50, 100, 150, 150, 100, 50, -300], 
+        [-400, -200, 0, 50, 50, 0, -200, -400], 
+        [-500, -900, -300, -300, -300, -300, -900, -500]
+        ]
+    
+    data.blackBishopScores = [
+        [-200, -100, -900, -100, -100, -900, -100, -200], 
+        [-100, 50, 0, 0, 0, 0, 50, -100], 
+        [-100, 100, 100, 100, 100, 100, 100, -100], 
+        [-100, 0, 100, 100, 100, 100, 0, -100], 
+        [-100, 50, 50, 100, 100, 50, 50, -100], 
+        [-100, 0, 50, 100, 100, 50, 0, -100], 
+        [-100, 0, 0, 0, 0, 0, 0, -100], 
+        [-200, -100, -100, -100, -100, -100, -100, -200]
+        ]
+    
+    data.whiteBishopScores = [
+        [-200, -100, -100, -100, -100, -100, -100, -200], 
+        [-100, 0, 0, 0, 0, 0, 0, -100], 
+        [-100, 0, 50, 100, 100, 50, 0, -100], 
+        [-100, 50, 50, 100, 100, 50, 50, -100], 
+        [-100, 0, 100, 100, 100, 100, 0, -100], 
+        [-100, 100, 100, 100, 100, 100, 100, -100], 
+        [-100, 50, 0, 0, 0, 0, 50, -100], 
+        [-200, -100, -900, -100, -100, -900, -100, -200]
+        ]
+        
+    data.blackRookScores = [
+        [0, 0, 0, 50, 50, 0, 0, 0], 
+        [-50, 0, 0, 0, 0, 0, 0, -50], 
+        [-50, 0, 0, 0, 0, 0, 0, -50], 
+        [-50, 0, 0, 0, 0, 0, 0, -50], 
+        [-50, 0, 0, 0, 0, 0, 0, -50], 
+        [-50, 0, 0, 0, 0, 0, 0, -50], 
+        [50, 100, 100, 100, 100, 100, 100, 50], 
+        [0, 0, 0, 0, 0, 0, 0, 0]
+        ]
+    
+    data.whiteRookScores = [
+        [0, 0, 0, 0, 0, 0, 0, 0], 
+        [50, 100, 100, 100, 100, 100, 100, 50], 
+        [-50, 0, 0, 0, 0, 0, 0, -50], 
+        [-50, 0, 0, 0, 0, 0, 0, -50], 
+        [-50, 0, 0, 0, 0, 0, 0, -50], 
+        [-50, 0, 0, 0, 0, 0, 0, -50], 
+        [-50, 0, 0, 0, 0, 0, 0, -50], 
+        [0, 0, 0, 50, 50, 0, 0, 0]
+        ]
+    
+    data.blackQueenScores = [
+        [-200, -100, -100, -50, 700, -100, -100, -200], 
+        [-100, 0, 0, 0, 0, 50, 0, -100], 
+        [-100, 0, 50, 50, 50, 50, 50, -100], 
+        [-50, 0, 50, 50, 50, 50, 0, 0], 
+        [-50, 0, 50, 50, 50, 50, 0, -50], 
+        [-100, 0, 50, 50, 50, 50, 0, -100], 
+        [-100, 0, 0, 0, 0, 0, 0, -100], 
+        [-200, -100, -100, -50, -50, -100, -100, -200]
+        ]
+    
+    data.whiteQueenScores = [
+        [-200, -100, -100, -50, -50, -100, -100, -200], 
+        [-100, 0, 0, 0, 0, 0, 0, -100], 
+        [-100, 0, 50, 50, 50, 50, 0, -100], 
+        [-50, 0, 50, 50, 50, 50, 0, -50], 
+        [0, 0, 50, 50, 50, 50, 0, -50], 
+        [-100, 50, 50, 50, 50, 50, 0, -100], 
+        [-100, 0, 50, 0, 0, 0, 0, -100], 
+        [-200, -100, -100, 700, -50, -100, -100, -200]
+        ]
+    
+    data.blackKingScores = [
+        [200, 300, 100, 0, 0, 100, 300, 200], 
+        [200, 200, 0, 0, 0, 0, 200, 200], 
+        [-100, -200, -200, -200, -200, -200, -200, -100], 
+        [-200, -300, -300, -400, -400, -300, -300, -200], 
+        [-300, -400, -400, -500, -500, -400, -400, -300], 
+        [-300, -400, -400, -500, -500, -400, -400, -300], 
+        [-300, -400, -400, -500, -500, -400, -400, -300], 
+        [-300, -400, -400, -500, -500, -400, -400, -300]
+        ]
+    data.whiteKingScores = [
+        [-300, -400, -400, -500, -500, -400, -400, -300], 
+        [-300, -400, -400, -500, -500, -400, -400, -300], 
+        [-300, -400, -400, -500, -500, -400, -400, -300], 
+        [-300, -400, -400, -500, -500, -400, -400, -300], 
+        [-200, -300, -300, -400, -400, -300, -300, -200], 
+        [-100, -200, -200, -200, -200, -200, -200, -100], 
+        [200, 200, 0, 0, 0, 0, 200, 200], 
+        [200, 300, 100, 0, 0, 100, 300, 200]
+        ]
+
+    
+
+
+
+####################################
+# mode dispatcher
+####################################
+
+#3 different modes and screens. hence, three different types of each function
+
+#leads to the mouse pressed for specific state
+def mousePressed(event, data):
+    if (data.mode == "gameState"):     gameStateMousePressed(event, data)
+
+#leads to the key pressed for specific state
+def keyPressed(event, data):
+    if (data.mode == "gameState"):        gameStateKeyPressed(event, data)
+
+#leads to the timer fired for specific state
+def timerFired(data):
+    if (data.mode == "gameState"):        gameStateTimerFired(data)
+
+#leads to the redraw for specific state
+def redrawAll(canvas, data):
+    if (data.mode == "gameState"):        gameStateRedrawAll(canvas, data)
+
+
+
+####################################
+# gameState
+####################################
+
+
+
+class ChessPiece(object):
+    def __init__(self, item, row, col, board, data):
+        self.item = item
+        self.row = row
+        self.col = col
+        self.team = self.item[0]
+        if self.team == "W":
+            self.move = -1
+        if self.team == "B":
+            self.move = 1
+    
+    def getCharacter(self):
+        characterImage = "GOTChess/%s.gif" %(str(self))
+        return PhotoImage(file = characterImage)
+        
+    def __eq__(self):
+        return isinstance(other, ChessPiece) and self.col == other.col and \
+         self.row == other.row and self.team == other.team
+    
+    def __repr__(self):
+        return self.item
+    
+    def __hash__(self):
+        return hash((self.row, self.col, self.team))
+    
+    def promotion(self):
+        if self.row == 0 or self.row == 7:
+            return True
+            
+    def getStrength(self):
+        return self.strength
+        
+    def getPossibleValue(self, scoreBoard):
+        changeInValue = scoreBoard[self.row][self.col]
+        tempStrength = self.strength
+        tempStrength += changeInValue
+        return tempStrength
+            
+class Pawn(ChessPiece):
+    def __init__(self, item, row, col, board, data):
+        super().__init__(item, row, col, board, data)
+        self.strength = board[self.row][self.col]
+
+    def allPossibleMoves(self, board, data):
+        allMoves = set()
+        newPossibleSpot = board[self.row + self.move][self.col]
+        firstPossibleSpot = board[self.row + 2*self.move][self.col]
+        if ((self.row == 1 and self.team == "W") or (self.row == 6 and \
+            self.team == "B")) and \
+            newPossibleSpot == None and firstPossibleSpot == None:
+                allMoves.add((self.row + 2*self.move, self.col))
+        if newPossibleSpot == None:
+            allMoves.add((self.row + self.move, self.col))
+        tryMove = -1
+        while tryMove < 2:
+            if 0<= (self.col + tryMove) <= 7:
+                if board[self.row + self.move][self.col + tryMove] != None:
+                    if board[self.row + self.move][self.col + tryMove].team != self.team:
+                        allMoves.add((self.row + self.move, self.col + tryMove))
+            tryMove += 2
+        return allMoves
+    
+class Rook(ChessPiece):
+    def __init__(self, item, row, col, board, data):
+        super().__init__(item, row, col, board, data)
+        self.strength = board[self.row][self.col]
+
+    def allPossibleMoves(self, board, data):
+        allMoves = set()
+        if self.team == "W":
+            row = self.row
+            while (row + self.move) <= 7:
+                if board[row + self.move][self.col] == None:
+                    allMoves.add((row + self.move, self.col))
+                    row += 1
+                if board[row + self.move][self.col].team != self.team:
+                    allMoves.add((row + self.move, self.col))
+                    break
+            col = self.col
+            while(col + self.move) <= 7:
+                if board[self.row][col + self.move] == None:
+                    allMoves.add((self.row, col + self.move))
+                    col += 1
+                if board[self.row][col + self.move].team != self.team:
+                    allMoves.add((self.row, col + self.move))
+                    break
+                         #########
+       
+            row = self.row        
+            while (row - self.move) >= 0:
+                if board[row - self.move][self.col] == None:
+                    allMoves.add((row - self.move, self.col))
+                    row -= 1
+                if board[row - self.move][self.col].team != self.team:
+                    allMoves.add((row - self.move, self.col))
+                    break
+            col = self.col
+            while(col - self.move) >= 0:
+                if board[self.row][col - self.move] == None:
+                    allMoves.add((self.row, col - self.move))
+                    col -= 1
+                if board[self.row][col - self.move].team != self.team:
+                    allMoves.add((self.row, col - self.move))
+                    break        
+        
+                 #########
+                    #########
+            
+        if self.team == "B":
+            row = self.row
+            while (row + self.move) >= 0:
+                if board[row + self.move][self.col] == None:
+                    allMoves.add((row + self.move, self.col))
+                    row -= 1
+                if board[row + self.move][self.col].team != self.team:
+                    allMoves.add((row + self.move, self.col))
+                    break
+            col = self.col
+            while(col + self.move) >= 0:
+                if board[self.row][col + self.move] == None:
+                    allMoves.add((self.row, col + self.move))
+                    col += 1
+                if board[self.row][col + self.move].team != self.team:
+                    allMoves.add((self.row, col + self.move))
+                    break
+            #########
+            row = self.row
+            while (row - self.move) <= 7:
+                if board[row - self.move][self.col] == None:
+                    allMoves.add((row - self.move, self.col))
+                    row -= 1
+                if board[row - self.move][self.col].team != self.team:
+                    allMoves.add((row - self.move, self.col))
+                    break
+            col = self.col
+            while(col - self.move) <= 7:
+                if board[self.row][col - self.move] == None:
+                    allMoves.add((self.row, col - self.move))
+                    col -= 1
+                if board[self.row][col - self.move].team != self.team:
+                    allMoves.add((self.row, col - self.move))
+                    break     
+        return allMoves
+##############################
+
+class Bishop(ChessPiece):
+    def __init__(self, item, row, col, board, data):
+        super().__init__(item, row, col, board, data)
+        self.strength = board[self.row][self.col]
+
+    def allPossibleMoves(self, board, data):
+        allMoves = set()
+        row = self.row
+        col = self.col
+        while (0<= row + self.move <= 7) and (0 <= col + self.move <=7):
+            if not isinstance(board[row + self.move][col + self.move], ChessPiece):
+                allMoves.add((row + self.move, col + self.move))
+                row += 1
+                col += 1
+            if board[row + self.move][col + self.move].team != self.team:
+                allMoves.add((row + self.move, col + self.move))
+                break  
+        while (0<= row - self.move <= 7) and (0 <= col + self.move <=7):
+            if board[row - self.move][col + self.move] == None:
+                allMoves.add((row - self.move, col + self.move))
+                row -= 1
+                col += 1
+            if board[row - self.move][col + self.move].team != self.team:
+                allMoves.add((row - self.move, col + self.move))
+                break  
+        while (0<= row + self.move <= 7) and (0 <= col - self.move <=7):
+            if board[row + self.move][col - self.move] == None:
+                allMoves.add((row + self.move, col - self.move))
+                row += 1
+                col -= 1
+            if board[row + self.move][col + self.move].team != self.team:
+                allMoves.add((row + self.move, col + self.move))
+                break  
+        while (0<= row - self.move <= 7) and (0 <= col - self.move <=7):
+            if board[row - self.move][col - self.move] == None:
+                allMoves.add((row - self.move, col - self.move))
+                row -= 1
+                col -= 1
+            if board[row - self.move][col - self.move].team != self.team:
+                allMoves.add((row - self.move, col - self.move))
+                break          
+        return allMoves
+        
+##############################
+
+
+class Queen(ChessPiece):
+    def __init__(self, item, row, col, board, data):
+        super().__init__(item, row, col, board, data)
+        self.strength = board[self.row][self.col]
+
+    def allPossibleMoves(self, board, data):
+        allMoves = set()
+        row = self.row
+        col = self.col
+        while (0<= row + self.move <= 7) and (0 <= col + self.move <=7):
+            if board[row + self.move][col + self.move] == None:
+                allMoves.add((row + self.move, col + self.move))
+                row += 1
+                col += 1
+            if board[row + self.move][col + self.move].team != self.team:
+                allMoves.add((row + self.move, col + self.move))
+                break  
+        row = self.row
+        col = self.col
+        while (0<= row - self.move <= 7) and (0 <= col + self.move <=7):
+            if board[row - self.move][col + self.move] == None:
+                allMoves.add((row - self.move, col + self.move))
+                row -= 1
+                col += 1
+            if board[row - self.move][col + self.move].team != self.team:
+                allMoves.add((row - self.move, col + self.move))
+                break  
+        row = self.row
+        col = self.col
+
+        while (0<= row + self.move <= 7) and (0 <= col - self.move <=7):
+            if board[row + self.move][col - self.move] == None:
+                allMoves.add((row + self.move, col - self.move))
+                row += 1
+                col -= 1
+            if board[row + self.move][col + self.move].team != self.team:
+                allMoves.add((row + self.move, col + self.move))
+                break  
+        row = self.row
+        col = self.col
+
+        while (0<= row - self.move <= 7) and (0 <= col - self.move <=7):
+            if board[row - self.move][col - self.move] == None:
+                allMoves.add((row - self.move, col - self.move))
+                row -= 1
+                col -= 1
+            if board[row - self.move][col - self.move].team != self.team:
+                allMoves.add((row - self.move, col - self.move))
+                break          
+        if self.team == "W":
+            row = self.row
+            while (row + self.move) <= 7:
+                if board[row + self.move][self.col] == None:
+                    allMoves.add((row + self.move, self.col))
+                    row += 1
+                if board[row + self.move][self.col].team != self.team:
+                    allMoves.add((row + self.move, self.col))
+                    break
+            col = self.col
+            while(col + self.move) <= 7:
+                if board[self.row][col + self.move] == None:
+                    allMoves.add((self.row, col + self.move))
+                    col += 1
+                if board[self.row][col + self.move].team != self.team:
+                    allMoves.add((self.row, col + self.move))
+                    break
+                         #########
+       
+            row = self.row        
+            while (row - self.move) >= 0:
+                if board[row - self.move][self.col] == None:
+                    allMoves.add((row - self.move, self.col))
+                    row -= 1
+                if board[row - self.move][self.col].team != self.team:
+                    allMoves.add((row - self.move, self.col))
+                    break
+            col = self.col
+            while(col - self.move) >= 0:
+                if board[self.row][col - self.move] == None:
+                    allMoves.add((self.row, col - self.move))
+                    col -= 1
+                if board[self.row][col - self.move].team != self.team:
+                    allMoves.add((self.row, col - self.move))
+                    break        
+        
+                 #########
+                    #########
+            
+        if self.team == "B":
+            row = self.row
+            while (row + self.move) >= 0:
+                if board[row + self.move][self.col] == None:
+                    allMoves.add((row + self.move, self.col))
+                    row -= 1
+                if board[row + self.move][self.col].team != self.team:
+                    allMoves.add((row + self.move, self.col))
+                    break
+            col = self.col
+            while(col + self.move) >= 0:
+                if board[self.row][col + self.move] == None:
+                    allMoves.add((self.row, col + self.move))
+                    col += 1
+                if board[self.row][col + self.move].team != self.team:
+                    allMoves.add((self.row, col + self.move))
+                    break
+            #########
+            row = self.row
+            while (row - self.move) <= 7:
+                if board[row - self.move][self.col] == None:
+                    allMoves.add((row - self.move, self.col))
+                    row -= 1
+                if board[row - self.move][self.col].team != self.team:
+                    allMoves.add((row - self.move, self.col))
+                    break
+            col = self.col
+            while(col - self.move) <= 7:
+                if board[self.row][col - self.move] == None:
+                    allMoves.add((self.row, col - self.move))
+                    col -= 1
+                if board[self.row][col - self.move].team != self.team:
+                    allMoves.add((self.row, col - self.move))
+                    break  
+
+##############################
+
+
+class King(ChessPiece):
+    def __init__(self, item, row, col, board, data):
+        super().__init__(item, row, col, board, data)
+        self.strength = board[self.row][self.col]
+
+    def allPossibleMoves(self, board, data):
+        allMoves = set()
+        if (0<= self.row + self.move <= 7) and (0 <= self.col + self.move <=7):
+            if board[self.row + self.move][self.col + self.move] == None:
+                allMoves.add((self.row + self.move, self.col + self.move))
+            if board[self.row + self.move][self.col + self.move].team != self.team:
+                allMoves.add((self.row + self.move, self.col + self.move))
+                
+        if (0<= self.row - self.move <= 7) and (0 <= self.col + self.move <=7):
+            if board[self.row - self.move][self.col + self.move] == None:
+                allMoves.add((self.row - self.move, self.col + self.move))
+            if board[self.row - self.move][self.col + self.move].team != self.team:
+                allMoves.add((self.row - self.move, self.col + self.move))
+
+        if (0<= self.row + self.move <= 7) and (0 <= self.col - self.move <=7):
+            if board[self.row + self.move][self.col - self.move] == None:
+                allMoves.add((self.row + self.move, self.col - self.move))
+            if board[self.row + self.move][self.col + self.move].team != self.team:
+                allMoves.add((self.row + self.move, self.col + self.move))
+                
+        if (0<= self.row - self.move <= 7) and (0 <= self.col - self.move <=7):
+            if board[self.row - self.move][self.col - self.move] == None:
+                allMoves.add((self.row - self.move, self.col - self.move))
+            if board[self.row - self.move][self.col - self.move].team != self.team:
+                allMoves.add((self.row - self.move, self.col - self.move))
+
+        if (0<= self.row + self.move <= 7):
+            if board[self.row + self.move][self.col] == None:
+                allMoves.add((self.row + self.move, self.col))
+            if board[self.row + self.move][self.col].team != self.team:
+                allMoves.add((self.row + self.move, self.col))
+        
+        if  (0 <= self.col + self.move <=7):
+            if board[self.row][self.col + self.move] == None:
+                allMoves.add((self.row, self.col + self.move))
+            if board[self.row][self.col + self.move].team != self.team:
+                allMoves.add((self.row, self.col + self.move))
+             #########
+       
+        if (0<= self.row - self.move <= 7):
+            if board[self.row - self.move][self.col] == None:
+                allMoves.add((self.row - self.move, self.col))
+            if board[self.row - self.move][self.col].team != self.team:
+                allMoves.add((self.row - self.move, self.col))
+                
+        if  (0 <= self.col - self.move <=7):
+            if board[self.row][self.col - self.move] == None:
+                allMoves.add((self.row, self.col - self.move))
+            if board[self.row][self.col - self.move].team != self.team:
+                allMoves.add((self.row, self.col - self.move))
+        return allMoves
+
+
+            
+
+
+
+
+
+
+
+def gameStateMousePressed(event, data):
+    #if game is finished, dont take anymore pressed mouses.
+    if data.finishGame == 1:
+        pass
+    else:
+        
+        
+        #row and column currently selected by user.
+        data.selectedRow = (event.y -(data.margin)) // data.cellSize
+        data.selectedCol = (event.x -(data.margin))// data.cellSize
+        data.selection = (data.selectedRow, data.selectedCol)
+        if data.selectedRow >= 0 and data.selectedCol >= 0:
+            data.allSelected.append(data.selection)
+            
+        for row in range(len(data.board)):
+            for col in range(len(data.board[row])):
+                if data.allSelected != []:
+                    if len(data.allSelected) %2 == 0:
+                        currRow, currCol = data.allSelected[-1][0], data.allSelected[-1][1]
+                        if currRow == row and currCol == col:
+                            makeMove(data, event)
+        # if len(data.allSelected) %2 == 0:
+        #     makeMove(data, event)
+
+        
+        
+
+    
+    
+    
+
+def gameStateKeyPressed(event, data):
+    #if game is finished, dont take anymore pressed keys.
+    if data.finishGame == 1:
+        pass
+    #move rows and columns for shifting keys up, down, left, right
+    elif event.keysym == "Up":
+        data.selectedRow -= 1
+    elif event.keysym == "Down":
+        data.selectedRow += 1
+    elif event.keysym == "Left":
+        data.selectedCol -= 1
+    elif event.keysym == "Right":
+        data.selectedCol += 1
+    elif event.keysym == "p":
+        data.mode = "gameOverState"
+    #insert input by user.
+    elif event.char in data.range:
+        data.insertNum = event.char
+    #selected keys by user
+    data.selection = \
+    (data.selectedRow%(len(data.board)), data.selectedCol%(len(data.board)))
+    
+def drawBoard(canvas, data):
+    #drawbottomBoard(canvas, data)
+
+    for row in range(len(data.tryBoard)):
+        for col in range(len(data.tryBoard[row])):
+            chessPieceType = str(data.tryBoard[row][col])
+            
+            left = col*data.cellSize
+            top = row*data.cellSize
+            #if square/cell is selected, change color of cell.
+            if (row, col) == data.selection:
+                color = "salmon"
+            
+            else:
+                if row%2 == 0 and col%2 != 0:
+                    color = "light blue"
+                if row%2 == 0 and col%2 == 0:
+                    color = "midnightblue"
+
+                if row%2 != 0 and col%2 != 0:
+                    color = "midnightblue"
+                if row%2 != 0 and col%2 == 0:
+                    color = "light blue"
+                    
+            canvas.create_rectangle(data.margin + left, data.margin + top, 
+                                    data.margin + left + data.cellSize, 
+                                    data.margin + top + data.cellSize,
+                                    fill=color, width = 1, outline = "white")
+            
+            if chessPieceType != None:
+                if chessPieceType[0] == "W":
+                    canvas.create_text( 
+                                    data.margin + left + data.cellSize/2, 
+                                    data.margin + top + data.cellSize/2,
+                                    text=chessPieceType, fill = "white")
+                if chessPieceType[0] == "B":
+                    canvas.create_text(
+                                    data.margin + left + data.cellSize/2, 
+                                    data.margin + top + data.cellSize/2,
+                                    text=chessPieceType, fill = "Black")
+                                    
+                                    
+                                    
+    for row in range(len(data.board)):
+        top = row*data.cellSize
+        canvas.create_text(data.margin-10, top + data.margin*(1.5),
+        text = len(data.board) - row) 
+    
+    for row in range(len(data.board)):
+        left = row*data.cellSize
+        canvas.create_text(left + data.margin*1.5, data.height - data.margin+10,
+        text = chr(65+row)) 
+
+def makeMove(data, event):
+    original = data.allSelected[-2]
+    currRow = int(original[0])
+    currCol = int(original[1])
+
+    move = data.allSelected[-1]
+    newRow = int(move[0])
+    newCol = int(move[1])
+    chessPieceType = (data.tryBoard[currRow][currCol])
+    print(newRow, newCol)
+    if isLegalMove(data, chessPieceType, currRow, currCol, newRow, newCol):
+        data.tryBoard[newRow][newCol] = chessPieceType
+        data.tryBoard[currRow][currCol] = None
+        data.originalBoard[newRow][newCol] = str(chessPieceType)
+        data.originalBoard[currRow][currCol] = None
+        print(data.originalBoard)
+
+        print("hey")
+
+
+def isLegalMove(data, chessPieceType, currRow, currCol, newRow, newCol):
+    chessItem = str(chessPieceType)
+    possibleMoves = chessPieceType.allPossibleMoves(data.tryBoard, data)
+    if (newRow, newCol) not in possibleMoves:
+        return False    
+    return True
+
+
+
+def drawbottomBoard(canvas, data):
+    canvas.create_rectangle(0, 0, data.width, data.height, fill = "black")
+    
+    canvas.create_rectangle(data.margin- data.margin/4, 
+    data.margin- data.margin/4, data.width - data.margin/4*3, 
+    data.height-data.margin/4*3, fill = "white")
+
+
+def gameStateTimerFired(data):
+    pass
+
+def drawHelpButton(canvas, data):
+    canvas.create_rectangle(data.margin, data.margin/8, 
+        data.width/2-data.margin*3, data.margin-30, fill = "mediumpurple4")
+        
+    canvas.create_text(data.margin, data.margin/4, anchor = NW,
+    text = "   Help", font="GameofThrones 20", fill = "white")
+    
+def drawQuitButton(canvas, data):
+    canvas.create_rectangle(data.width - data.margin, data.margin/8, 
+        data.width-data.margin*2, data.margin-30, fill = "mediumpurple4")
+        
+    canvas.create_text(data.width - data.margin*2, data.margin/4, anchor = NW,
+    text = "  Quit", font="GameofThrones 20", fill = "white")
+
+def drawPlayer(canvas, data):
+    if data.moveColor %2 == 0:
+        canvas.create_rectangle(data.width/2 - data.margin*2, data.margin/8, 
+            data.width/2 + data.margin*2, data.margin-30, fill = "mediumpurple4")
+            
+        canvas.create_text(data.width/2, data.margin/2.5,
+        text = "White   Player's   Turn", font="GameofThrones 20", fill = "white")
+    
+    if data.moveColor %2 != 0:
+        canvas.create_rectangle(data.width/2 - data.margin*2, data.margin/8, 
+            data.width/2+data.margin*2, data.margin-30, fill = "mediumpurple4")
+            
+        canvas.create_text(data.width/2, data.margin/2.5,
+        text = "Black   Player's   Turn", font="GameofThrones 20", fill = "white")
+        
+
+def gameStateRedrawAll(canvas, data):
+    drawbottomBoard(canvas, data)
+    drawBoard(canvas, data)
+    drawHelpButton(canvas, data)
+    drawQuitButton(canvas, data)
+    drawPlayer(canvas, data)
+    
+
+####################################
+# use the run function as-is
+####################################
+
+#RUN Function, cited from the 15-112 course Notes.
+
+
+def run(width=300, height=300):
+    def redrawAllWrapper(canvas, data):
+        canvas.delete(ALL)
+        canvas.create_rectangle(0, 0, data.width, data.height,
+                                fill='white', width=0)
+        redrawAll(canvas, data)
+        canvas.update()    
+
+    def mousePressedWrapper(event, canvas, data):
+        mousePressed(event, data)
+        redrawAllWrapper(canvas, data)
+
+    def keyPressedWrapper(event, canvas, data):
+        keyPressed(event, data)
+        redrawAllWrapper(canvas, data)
+
+    def timerFiredWrapper(canvas, data):
+        timerFired(data)
+        redrawAllWrapper(canvas, data)
+        # pause, then call timerFired again
+        canvas.after(data.timerDelay, timerFiredWrapper, canvas, data)
+    # Set up data and call init
+    class Struct(object): pass
+    data = Struct()
+    data.width = width
+    data.height = height
+    data.timerDelay = 100 # milliseconds
+    root = Tk()
+    root.resizable(width=False, height=False) # prevents resizing window
+    init(data)
+    # create the root and the canvas
+    canvas = Canvas(root, width=data.width, height=data.height)
+    canvas.configure(bd=0, highlightthickness=0)
+    canvas.pack()
+    # set up events
+    root.bind("<Button-1>", lambda event:
+                            mousePressedWrapper(event, canvas, data))
+    root.bind("<Key>", lambda event:
+                            keyPressedWrapper(event, canvas, data))
+    timerFiredWrapper(canvas, data)
+    # and launch the app
+    root.mainloop()  # blocks until window is closed
+    print("bye!")
+
+run(800, 800)
